@@ -30,6 +30,7 @@ h1{font-size:35px}
 label{display:block;margin-top:15px;margin-bottom:6px;font-weight:bold}
 input{width:100%;padding:13px;box-sizing:border-box;background:#1b1b1b;color:white;border:1px solid #444;border-radius:8px}
 .message{text-align:center;margin-top:15px;color:#aaa}
+.timer{text-align:center;color:#d4af37;font-weight:bold;margin-top:15px}
 </style>
 </head>
 
@@ -88,10 +89,12 @@ CONTINUE
 <input id="customerPhone" type="tel" placeholder="Enter your phone number">
 
 <button class="continue" onclick="saveEntry()">
-CONTINUE TO PAYMENT
+RESERVE NUMBERS
 </button>
 
 <div id="message" class="message"></div>
+
+<div id="timer" class="timer"></div>
 
 </div>
 
@@ -115,6 +118,7 @@ SUPABASE_KEY
 let competition;
 let selectedNumbers = [];
 let soldNumbers = [];
+let reservationTimer;
 
 async function loadCompetition(){
 
@@ -163,7 +167,7 @@ async function loadSoldNumbers(){
 
 const result = await db
 .from("entries")
-.select("number,status")
+.select("number,status,reserved_until")
 .eq("competition_id",competition.id)
 .in("status",["reserved","paid"]);
 
@@ -172,7 +176,23 @@ console.log(result.error);
 return;
 }
 
-soldNumbers = result.data.map(entry => entry.number);
+const now = new Date();
+
+soldNumbers = result.data
+.filter(entry => {
+
+if(entry.status === "paid"){
+return true;
+}
+
+if(!entry.reserved_until){
+return true;
+}
+
+return new Date(entry.reserved_until) > now;
+
+})
+.map(entry => entry.number);
 }
 
 function createNumbers(){
@@ -207,6 +227,7 @@ button.classList.remove("selected");
 }else{
 
 selectedNumbers.push(i);
+
 button.classList.add("selected");
 
 }
@@ -272,7 +293,10 @@ return;
 }
 
 message.textContent =
-"Saving your numbers...";
+"Reserving your numbers...";
+
+const reservedUntil =
+new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
 const entries = selectedNumbers.map(number => ({
 
@@ -281,7 +305,8 @@ number: number,
 customer_name: name,
 customer_email: email,
 customer_phone: phone,
-status: "reserved"
+status: "reserved",
+reserved_until: reservedUntil
 
 }));
 
@@ -294,7 +319,7 @@ if(result.error){
 if(result.error.code === "23505"){
 
 message.textContent =
-"One or more of those numbers has just been taken. Please go back and choose another number.";
+"One or more of those numbers has just been taken. Please choose another number.";
 
 }else{
 
@@ -306,7 +331,7 @@ return;
 }
 
 message.textContent =
-"Numbers reserved successfully. Payment will be added next.";
+"Your numbers have been reserved.";
 
 selectedNumbers.forEach(number => {
 
@@ -317,6 +342,54 @@ soldNumbers.push(number);
 });
 
 createNumbers();
+
+startTimer();
+
+}
+
+function startTimer(){
+
+let seconds = 600;
+
+updateTimer(seconds);
+
+clearInterval(reservationTimer);
+
+reservationTimer = setInterval(function(){
+
+seconds--;
+
+updateTimer(seconds);
+
+if(seconds <= 0){
+
+clearInterval(reservationTimer);
+
+document.getElementById("timer").textContent =
+"Your reservation has expired.";
+
+selectedNumbers = [];
+
+location.reload();
+
+}
+
+},1000);
+
+}
+
+function updateTimer(seconds){
+
+const minutes =
+Math.floor(seconds / 60);
+
+const remainingSeconds =
+seconds % 60;
+
+document.getElementById("timer").textContent =
+"Numbers reserved for " +
+minutes + ":" +
+String(remainingSeconds).padStart(2,"0");
 
 }
 
