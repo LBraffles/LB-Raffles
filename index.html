@@ -17,15 +17,18 @@ header{text-align:center;padding:25px;border-bottom:1px solid #333}
 .badge{background:#d4af37;color:#000;padding:8px 15px;border-radius:20px;font-weight:bold}
 h1{font-size:35px}
 .prize{color:#d4af37;font-size:25px;font-weight:bold}
-.card{background:#111;border:1px solid #333;border-radius:15px;padding:20px}
+.card{background:#111;border:1px solid #333;border-radius:15px;padding:20px;margin-bottom:20px}
 .price{font-size:24px;font-weight:bold}
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:20px}
 .number{padding:14px 5px;background:#1b1b1b;color:white;border:1px solid #444;border-radius:8px;font-weight:bold}
 .number.selected{background:#d4af37;color:#000}
-.number.sold{background:#444;color:#777;text-decoration:line-through;cursor:not-allowed}
+.number.sold{background:#444;color:#777;text-decoration:line-through}
 .continue{width:100%;margin-top:20px;padding:16px;background:#d4af37;border:none;border-radius:10px;font-weight:bold;font-size:17px}
 .total{text-align:center;margin-top:20px;font-size:20px}
 .loading{text-align:center;padding:40px;color:#aaa}
+.hidden{display:none}
+label{display:block;margin-top:15px;margin-bottom:6px;font-weight:bold}
+input{width:100%;padding:13px;box-sizing:border-box;background:#1b1b1b;color:white;border:1px solid #444;border-radius:8px}
 .message{text-align:center;margin-top:15px;color:#aaa}
 </style>
 </head>
@@ -42,7 +45,7 @@ h1{font-size:35px}
 Loading competition...
 </div>
 
-<div id="competition" style="display:none">
+<div id="competition" class="hidden">
 
 <div class="hero">
 <div class="badge">LIVE COMPETITION</div>
@@ -65,14 +68,35 @@ Selected: <span id="selected">0</span><br>
 Total: £<span id="total">0.00</span>
 </div>
 
-<button class="continue" onclick="continueEntry()">
+<button class="continue" onclick="showDetails()">
 CONTINUE
+</button>
+
+</div>
+
+<div id="details" class="card hidden">
+
+<h2>Your Details</h2>
+
+<label>Full name</label>
+<input id="customerName" type="text" placeholder="Enter your full name">
+
+<label>Email address</label>
+<input id="customerEmail" type="email" placeholder="Enter your email">
+
+<label>Phone number</label>
+<input id="customerPhone" type="tel" placeholder="Enter your phone number">
+
+<button class="continue" onclick="saveEntry()">
+CONTINUE TO PAYMENT
 </button>
 
 <div id="message" class="message"></div>
 
 </div>
+
 </div>
+
 </div>
 
 <script>
@@ -118,7 +142,7 @@ competition = result.data[0];
 await loadSoldNumbers();
 
 document.getElementById("loading").style.display="none";
-document.getElementById("competition").style.display="block";
+document.getElementById("competition").classList.remove("hidden");
 
 document.getElementById("title").textContent =
 competition.title;
@@ -209,7 +233,7 @@ Number(competition.price)
 ).toFixed(2);
 }
 
-function continueEntry(){
+function showDetails(){
 
 if(selectedNumbers.length === 0){
 
@@ -218,14 +242,81 @@ return;
 
 }
 
-document.getElementById("message").textContent =
-"Numbers selected: " +
-selectedNumbers.sort((a,b)=>a-b).join(", ") +
-" — Total £" +
-(
-selectedNumbers.length *
-Number(competition.price)
-).toFixed(2);
+document.getElementById("details")
+.classList.remove("hidden");
+
+document.getElementById("details")
+.scrollIntoView({behavior:"smooth"});
+}
+
+async function saveEntry(){
+
+const name =
+document.getElementById("customerName").value.trim();
+
+const email =
+document.getElementById("customerEmail").value.trim();
+
+const phone =
+document.getElementById("customerPhone").value.trim();
+
+const message =
+document.getElementById("message");
+
+if(!name || !email || !phone){
+
+message.textContent =
+"Please complete all your details.";
+
+return;
+}
+
+message.textContent =
+"Saving your numbers...";
+
+const entries = selectedNumbers.map(number => ({
+
+competition_id: competition.id,
+number: number,
+customer_name: name,
+customer_email: email,
+customer_phone: phone,
+status: "reserved"
+
+}));
+
+const result = await db
+.from("entries")
+.insert(entries);
+
+if(result.error){
+
+if(result.error.code === "23505"){
+
+message.textContent =
+"One or more of those numbers has just been taken. Please go back and choose another number.";
+
+}else{
+
+message.textContent =
+"Something went wrong. Please try again.";
+}
+
+return;
+}
+
+message.textContent =
+"Numbers reserved successfully. Payment will be added next.";
+
+selectedNumbers.forEach(number => {
+
+if(!soldNumbers.includes(number)){
+soldNumbers.push(number);
+}
+
+});
+
+createNumbers();
 
 }
 
