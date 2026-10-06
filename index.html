@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LB Raffles Admin</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  padding:20px;
+  background:#080808;
+  color:#fff;
+  font-family:Arial,sans-serif;
+}
+.container{
+  max-width:600px;
+  margin:auto;
+}
+h1{text-align:center}
+.card{
+  background:#111;
+  border:1px solid #292929;
+  border-radius:16px;
+  padding:20px;
+  margin-top:20px;
+}
+label{
+  display:block;
+  margin-top:16px;
+  margin-bottom:6px;
+  font-weight:bold;
+}
+input,textarea{
+  width:100%;
+  padding:13px;
+  border-radius:8px;
+  border:1px solid #333;
+  background:#1a1a1a;
+  color:#fff;
+  box-sizing:border-box;
+}
+button{
+  width:100%;
+  padding:15px;
+  margin-top:20px;
+  border:0;
+  border-radius:10px;
+  background:#d4af37;
+  color:#000;
+  font-weight:bold;
+  font-size:16px;
+}
+.hidden{display:none}
+.message{
+  text-align:center;
+  margin-top:15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>LB RAFFLES ADMIN</h1>
+
+<div id="loginBox" class="card">
+
+<label>Email</label>
+<input id="email" type="email">
+
+<label>Password</label>
+<input id="password" type="password">
+
+<button onclick="login()">LOGIN</button>
+
+<div id="loginMessage" class="message"></div>
+
+</div>
+
+<div id="adminBox" class="card hidden">
+
+<h2>Edit Competition</h2>
+
+<label>Competition title</label>
+<input id="title">
+
+<label>Prize / item</label>
+<input id="prize">
+
+<label>Price per number (£)</label>
+<input id="price" type="number" step="0.01">
+
+<label>Total numbers</label>
+<input id="numbers" type="number">
+
+<label>Description</label>
+<textarea id="description" rows="4"></textarea>
+
+<button onclick="saveCompetition()">
+SAVE COMPETITION
+</button>
+
+<div id="saveMessage" class="message"></div>
+
+</div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+"https://qyimcrigxsoqcdcajikq.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_ZFz80NnFNaLJB3t-JZ-cig_YRwRdCUz";
+
+const supabaseClient =
+supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+let competitionId=null;
+
+async function login(){
+
+  const email =
+    document.getElementById("email").value;
+
+  const password =
+    document.getElementById("password").value;
+
+  const {data,error} =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if(error){
+    document.getElementById("loginMessage").textContent =
+      error.message;
+    return;
+  }
+
+  await checkAdmin(data.user.id);
+}
+
+async function checkAdmin(userId){
+
+  const {data,error} =
+    await supabaseClient
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id",userId)
+      .maybeSingle();
+
+  if(error || !data){
+    document.getElementById("loginMessage").textContent =
+      "You do not have admin access.";
+    return;
+  }
+
+  document.getElementById("loginBox")
+    .classList.add("hidden");
+
+  document.getElementById("adminBox")
+    .classList.remove("hidden");
+
+  loadCompetition();
+}
+
+async function loadCompetition(){
+
+  const {data,error} =
+    await supabaseClient
+      .from("competitions")
+      .select("*")
+      .order("created_at",{ascending:false})
+      .limit(1)
+      .single();
+
+  if(error){
+    document.getElementById("saveMessage").textContent =
+      error.message;
+    return;
+  }
+
+  competitionId=data.id;
+
+  document.getElementById("title").value=data.title;
+  document.getElementById("prize").value=data.prize;
+  document.getElementById("price").value=data.price;
+  document.getElementById("numbers").value=data.total_numbers;
+  document.getElementById("description").value=data.description || "";
+}
+
+async function saveCompetition(){
+
+  const updates={
+    title:document.getElementById("title").value,
+    prize:document.getElementById("prize").value,
+    price:Number(document.getElementById("price").value),
+    total_numbers:Number(document.getElementById("numbers").value),
+    description:document.getElementById("description").value
+  };
+
+  const {error} =
+    await supabaseClient
+      .from("competitions")
+      .update(updates)
+      .eq("id",competitionId);
+
+  if(error){
+    document.getElementById("saveMessage").textContent =
+      error.message;
+    return;
+  }
+
+  document.getElementById("saveMessage").textContent =
+    "Competition saved successfully!";
+}
+
+</script>
+
+</body>
+</html>
