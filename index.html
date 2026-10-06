@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LB Raffles</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #080b10;
+      color: white;
+    }
+
+    header {
+      padding: 20px;
+      border-bottom: 1px solid #242933;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+
+    nav a {
+      color: #aaa;
+      text-decoration: none;
+      margin-left: 18px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 70px 20px;
+      background: linear-gradient(180deg, #111722, #080b10);
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .hero p {
+      color: #aaa;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    .button {
+      display: inline-block;
+      background: #21c45b;
+      color: white;
+      padding: 14px 25px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+
+    .competition {
+      background: #11161f;
+      border: 1px solid #29303b;
+      border-radius: 18px;
+      padding: 25px;
+    }
+
+    .competition h2 {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+
+    .price {
+      color: #21c45b;
+      font-size: 24px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .numbers {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 25px;
+    }
+
+    .number {
+      padding: 14px 5px;
+      border-radius: 8px;
+      border: 1px solid #343b47;
+      background: #181e27;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .number:hover {
+      border-color: #21c45b;
+    }
+
+    .number.selected {
+      background: #21c45b;
+      border-color: #21c45b;
+    }
+
+    .number.sold {
+      background: #30343b;
+      color: #777;
+      text-decoration: line-through;
+      cursor: not-allowed;
+    }
+
+    .checkout {
+      margin-top: 25px;
+      padding: 20px;
+      background: #080b10;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .total {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .continue {
+      border: 0;
+      background: #21c45b;
+      color: white;
+      padding: 14px 30px;
+      border-radius: 9px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    section {
+      margin-top: 50px;
+    }
+
+    section h2 {
+      margin-bottom: 15px;
+    }
+
+    section p {
+      color: #aaa;
+      line-height: 1.6;
+    }
+
+    footer {
+      margin-top: 50px;
+      padding: 30px 20px;
+      text-align: center;
+      border-top: 1px solid #242933;
+      color: #777;
+    }
+
+    @media (min-width: 700px) {
+      .numbers {
+        grid-template-columns: repeat(10, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">LB RAFFLES</div>
+
+  <nav>
+    <a href="#competition">Competitions</a>
+    <a href="#how">How It Works</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <h1>WIN BIG.</h1>
+  <p>Enter LB Raffles competitions and be in with a chance to win.</p>
+  <a class="button" href="#competition">ENTER NOW</a>
+</div>
+
+<main class="container">
+
+  <div class="competition" id="competition">
+
+    <h2>Win £1,500 Cash</h2>
+
+    <p>Choose your numbers below.</p>
+
+    <div class="price">£15 per entry</div>
+
+    <div class="numbers" id="numbers"></div>
+
+    <div class="checkout">
+
+      <div class="total">
+        Selected: <span id="count">0</span>
+        &nbsp; | &nbsp;
+        Total: £<span id="total">0</span>
+      </div>
+
+      <button class="continue" onclick="continueEntry()">
+        CONTINUE
+      </button>
+
+    </div>
+
+  </div>
+
+  <section id="how">
+    <h2>How It Works</h2>
+
+    <p>
+      Choose an available number, continue to entry,
+      and follow the checkout process. Your selected numbers
+      will be displayed before completing your entry.
+    </p>
+  </section>
+
+  <section>
+    <h2>LB Raffles</h2>
+
+    <p>
+      Competitions are subject to the applicable terms and
+      conditions and legal requirements. This website is
+      currently a development version.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  © 2026 LB Raffles. All rights reserved.
+</footer>
+
+<script>
+
+  const pricePerNumber = 15;
+
+  // Example numbers that are already unavailable
+  const soldNumbers = [3, 8, 14, 22, 31, 47, 58, 66, 73, 91];
+
+  const selectedNumbers = [];
+
+  const numbersContainer = document.getElementById("numbers");
+  const countDisplay = document.getElementById("count");
+  const totalDisplay = document.getElementById("total");
+
+  for (let i = 1; i <= 100; i++) {
+
+    const button = document.createElement("button");
+
+    button.className = "number";
+
+    button.textContent = String(i).padStart(3, "0");
+
+    if (soldNumbers.includes(i)) {
+
+      button.classList.add("sold");
+      button.disabled = true;
+
+    } else {
+
+      button.onclick = function () {
+
+        if (selectedNumbers.includes(i)) {
+
+          selectedNumbers.splice(
+            selectedNumbers.indexOf(i),
+            1
+          );
+
+          button.classList.remove("selected");
+
+        } else {
+
+          selectedNumbers.push(i);
+
+          button.classList.add("selected");
+        }
+
+        updateTotal();
+      };
+    }
+
+    numbersContainer.appendChild(button);
+  }
+
+  function updateTotal() {
+
+    countDisplay.textContent = selectedNumbers.length;
+
+    totalDisplay.textContent =
+      selectedNumbers.length * pricePerNumber;
+  }
+
+  function continueEntry() {
+
+    if (selectedNumbers.length === 0) {
+
+      alert("Please select at least one number.");
+
+      return;
+    }
+
+    alert(
+      "Selected numbers: " +
+      selectedNumbers
+        .sort((a,b) => a-b)
+        .map(n => String(n).padStart(3, "0"))
+        .join(", ")
+    );
+  }
+
+</script>
+
+</body>
+</html>
