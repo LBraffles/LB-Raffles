@@ -8,161 +8,71 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #080808;
-  color: white;
-}
-
-header {
-  text-align: center;
-  padding: 25px;
-  border-bottom: 1px solid #333;
-}
-
-.logo {
-  font-size: 30px;
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-
-.logo span {
-  color: #d4af37;
-}
-
-.container {
-  max-width: 800px;
-  margin: auto;
-  padding: 25px 15px;
-}
-
-.hero {
-  text-align: center;
-  padding: 30px 0;
-}
-
-.badge {
-  background: #d4af37;
-  color: black;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-weight: bold;
-}
-
-h1 {
-  font-size: 35px;
-}
-
-.prize {
-  color: #d4af37;
-  font-size: 25px;
-  font-weight: bold;
-}
-
-.card {
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 15px;
-  padding: 20px;
-}
-
-.price {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-top: 20px;
-}
-
-.number {
-  padding: 14px 5px;
-  background: #1b1b1b;
-  color: white;
-  border: 1px solid #444;
-  border-radius: 8px;
-  font-weight: bold;
-}
-
-.number.selected {
-  background: #d4af37;
-  color: black;
-}
-
-button.continue {
-  width: 100%;
-  margin-top: 20px;
-  padding: 16px;
-  background: #d4af37;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 17px;
-}
-
-.total {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 20px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #aaa;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#080808;color:white}
+header{text-align:center;padding:25px;border-bottom:1px solid #333}
+.logo{font-size:30px;font-weight:bold;letter-spacing:2px}
+.logo span{color:#d4af37}
+.container{max-width:800px;margin:auto;padding:25px 15px}
+.hero{text-align:center;padding:30px 0}
+.badge{background:#d4af37;color:#000;padding:8px 15px;border-radius:20px;font-weight:bold}
+h1{font-size:35px}
+.prize{color:#d4af37;font-size:25px;font-weight:bold}
+.card{background:#111;border:1px solid #333;border-radius:15px;padding:20px}
+.price{font-size:24px;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:20px}
+.number{padding:14px 5px;background:#1b1b1b;color:white;border:1px solid #444;border-radius:8px;font-weight:bold}
+.number.selected{background:#d4af37;color:#000}
+.number.sold{background:#444;color:#777;text-decoration:line-through;cursor:not-allowed}
+.continue{width:100%;margin-top:20px;padding:16px;background:#d4af37;border:none;border-radius:10px;font-weight:bold;font-size:17px}
+.total{text-align:center;margin-top:20px;font-size:20px}
+.loading{text-align:center;padding:40px;color:#aaa}
+.message{text-align:center;margin-top:15px;color:#aaa}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div class="logo">LB <span>RAFFLES</span></div>
+<div class="logo">LB <span>RAFFLES</span></div>
 </header>
 
 <div class="container">
 
-  <div id="loading" class="loading">
-    Loading competition...
-  </div>
+<div id="loading" class="loading">
+Loading competition...
+</div>
 
-  <div id="competition" style="display:none;">
+<div id="competition" style="display:none">
 
-    <div class="hero">
-      <div class="badge">LIVE COMPETITION</div>
+<div class="hero">
+<div class="badge">LIVE COMPETITION</div>
+<h1 id="title"></h1>
+<div class="prize" id="prize"></div>
+</div>
 
-      <h1 id="title"></h1>
+<div class="card">
 
-      <div class="prize" id="prize"></div>
-    </div>
+<div class="price">
+£<span id="price"></span> per number
+</div>
 
-    <div class="card">
+<p id="description"></p>
 
-      <div class="price">
-        £<span id="price"></span> per number
-      </div>
+<div id="numbers" class="grid"></div>
 
-      <p id="description"></p>
+<div class="total">
+Selected: <span id="selected">0</span><br>
+Total: £<span id="total">0.00</span>
+</div>
 
-      <div id="numbers" class="grid"></div>
+<button class="continue" onclick="continueEntry()">
+CONTINUE
+</button>
 
-      <div class="total">
-        Selected: <span id="selected">0</span><br>
-        Total: £<span id="total">0.00</span>
-      </div>
+<div id="message" class="message"></div>
 
-      <button class="continue" onclick="continueEntry()">
-        CONTINUE
-      </button>
-
-    </div>
-
-  </div>
-
+</div>
+</div>
 </div>
 
 <script>
@@ -174,125 +84,149 @@ const SUPABASE_KEY =
 "sb_publishable_ZFz80NnFNaLJB3t-JZ-cig_YRwRdCUz";
 
 const db = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
+SUPABASE_URL,
+SUPABASE_KEY
 );
 
 let competition;
 let selectedNumbers = [];
+let soldNumbers = [];
 
-async function loadCompetition() {
+async function loadCompetition(){
 
-  const result = await db
-    .from("competitions")
-    .select("*")
-    .eq("active", true)
-    .order("created_at", { ascending: false })
-    .limit(1);
+const result = await db
+.from("competitions")
+.select("*")
+.eq("active",true)
+.order("created_at",{ascending:false})
+.limit(1);
 
-  if (result.error) {
-    document.getElementById("loading").textContent =
-      "Unable to load competition.";
-    return;
-  }
-
-  if (!result.data || result.data.length === 0) {
-    document.getElementById("loading").textContent =
-      "No competition currently live.";
-    return;
-  }
-
-  competition = result.data[0];
-
-  document.getElementById("loading").style.display = "none";
-  document.getElementById("competition").style.display = "block";
-
-  document.getElementById("title").textContent =
-    competition.title;
-
-  document.getElementById("prize").textContent =
-    competition.prize;
-
-  document.getElementById("price").textContent =
-    Number(competition.price).toFixed(2);
-
-  document.getElementById("description").textContent =
-    competition.description || "";
-
-  createNumbers();
+if(result.error){
+document.getElementById("loading").textContent =
+"Unable to load competition.";
+return;
 }
 
-function createNumbers() {
-
-  const box = document.getElementById("numbers");
-
-  box.innerHTML = "";
-
-  for (
-    let i = 1;
-    i <= competition.total_numbers;
-    i++
-  ) {
-
-    const button = document.createElement("button");
-
-    button.className = "number";
-
-    button.textContent = i;
-
-    button.onclick = function() {
-
-      if (selectedNumbers.includes(i)) {
-
-        selectedNumbers =
-          selectedNumbers.filter(n => n !== i);
-
-        button.classList.remove("selected");
-
-      } else {
-
-        selectedNumbers.push(i);
-
-        button.classList.add("selected");
-      }
-
-      updateTotal();
-    };
-
-    box.appendChild(button);
-  }
+if(!result.data || result.data.length === 0){
+document.getElementById("loading").textContent =
+"No competition currently live.";
+return;
 }
 
-function updateTotal() {
+competition = result.data[0];
 
-  document.getElementById("selected").textContent =
-    selectedNumbers.length;
+await loadSoldNumbers();
 
-  document.getElementById("total").textContent =
-    (
-      selectedNumbers.length *
-      Number(competition.price)
-    ).toFixed(2);
+document.getElementById("loading").style.display="none";
+document.getElementById("competition").style.display="block";
+
+document.getElementById("title").textContent =
+competition.title;
+
+document.getElementById("prize").textContent =
+competition.prize;
+
+document.getElementById("price").textContent =
+Number(competition.price).toFixed(2);
+
+document.getElementById("description").textContent =
+competition.description || "";
+
+createNumbers();
 }
 
-function continueEntry() {
+async function loadSoldNumbers(){
 
-  if (selectedNumbers.length === 0) {
+const result = await db
+.from("entries")
+.select("number,status")
+.eq("competition_id",competition.id)
+.in("status",["reserved","paid"]);
 
-    alert("Please select at least one number.");
+if(result.error){
+console.log(result.error);
+return;
+}
 
-    return;
-  }
+soldNumbers = result.data.map(entry => entry.number);
+}
 
-  alert(
-    "Numbers selected: " +
-    selectedNumbers.sort((a,b) => a-b).join(", ") +
-    "\n\nTotal: £" +
-    (
-      selectedNumbers.length *
-      Number(competition.price)
-    ).toFixed(2)
-  );
+function createNumbers(){
+
+const box = document.getElementById("numbers");
+
+box.innerHTML="";
+
+for(let i=1;i<=competition.total_numbers;i++){
+
+const button = document.createElement("button");
+
+button.className="number";
+button.textContent=i;
+
+if(soldNumbers.includes(i)){
+
+button.classList.add("sold");
+button.disabled=true;
+
+}else{
+
+button.onclick=function(){
+
+if(selectedNumbers.includes(i)){
+
+selectedNumbers =
+selectedNumbers.filter(n => n !== i);
+
+button.classList.remove("selected");
+
+}else{
+
+selectedNumbers.push(i);
+button.classList.add("selected");
+
+}
+
+updateTotal();
+
+};
+
+}
+
+box.appendChild(button);
+}
+}
+
+function updateTotal(){
+
+document.getElementById("selected").textContent =
+selectedNumbers.length;
+
+document.getElementById("total").textContent =
+(
+selectedNumbers.length *
+Number(competition.price)
+).toFixed(2);
+}
+
+function continueEntry(){
+
+if(selectedNumbers.length === 0){
+
+alert("Please select at least one number.");
+return;
+
+}
+
+document.getElementById("message").textContent =
+"Numbers selected: " +
+selectedNumbers.sort((a,b)=>a-b).join(", ") +
+" — Total £" +
+(
+selectedNumbers.length *
+Number(competition.price)
+).toFixed(2);
+
 }
 
 loadCompetition();
